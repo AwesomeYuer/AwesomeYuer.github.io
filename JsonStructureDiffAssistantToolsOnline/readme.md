@@ -8,6 +8,8 @@ May be you'd better access it Over The GFW (Great Fire Wall).
 
 https://agreeable-flower-06c872700.1.azurestaticapps.net/
 
+https://microshaoft.github.io/JsonStructureDiffAssistantToolsOnline/
+
 ## Development Running/Debuging Usage
 
 1. Initialize Development Environment for using NodeJs lite-server as Web Server in VSCode:
