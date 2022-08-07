@@ -1,0 +1,605 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="Generator" content="EditPlus®,Microshaoft">
+    <meta name="Author" content="EditPlus®,Microshaoft">
+    <meta name="Keywords" content="EditPlus®,Microshaoft">
+    <meta name="Description" content="EditPlus®,Microshaoft">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <title>Json Structure Diff Assistant Tools Online</title>
+
+    <script src="libs/knockout/knockout-3.5.1.debug.js" type="text/javascript"></script>
+    <script src="libs/jquery/jquery-3.5.1.js" type="text/javascript"></script>
+
+    <link rel="stylesheet" href="libs/jquery-ui/jquery-ui-1.12.1.css">
+    <script src="libs/jquery-ui/jquery-ui-1.12.1.js"></script>
+    <script src="libs/splitjs/split.js"></script>
+    
+    <link href="libs/driver.js/driver.min.css" rel="stylesheet" />
+    <script src="libs/driver.js/driver.min.js"></script>
+    
+    <script src="libs/monaco-editor/min/vs/loader.js"></script>
+
+    <style type="text/css">
+        body {
+            font-size: 12px;
+            font-family: Sans-Serif;
+        }
+
+        h2 {
+            margin: 0.5em 0 0.1em;
+            text-align: center;
+        }
+
+        .top {
+            text-align: center;
+        }
+
+        .textInput {
+            display: block;
+            width: 49%;
+            float: left;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+        }
+
+        label:hover {
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .spacer {
+            margin-left: 10px;
+        }
+
+        .viewType {
+            font-size: 16px;
+            clear: both;
+            text-align: center;
+            padding: 1em;
+        }
+
+        #diffoutput {
+            width: 100%;
+        }
+    </style>
+    <!--split.js css-->
+    <style>
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            padding: 8px;
+            background-color: #F6F6F6;
+            box-sizing: border-box;
+        }
+
+        .split {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .content {
+            border: 1px solid #C0C0C0;
+            box-shadow: inset 0 1px 2px #e4e4e4;
+            background-color: #fff;
+        }
+
+        .gutter {
+            background-color: transparent;
+            background-repeat: no-repeat;
+            background-position: 50%;
+        }
+
+        .gutter.gutter-horizontal {
+            cursor: col-resize;
+            /* background-image: url('../grips/vertical.png');*/
+        }
+
+        .gutter.gutter-vertical {
+            cursor: row-resize;
+            /*background-image: url('../grips/horizontal.png');*/
+        }
+
+        .split.split-horizontal,
+        .gutter.gutter-horizontal {
+            height: 100%;
+            float: left;
+        }
+    </style>
+
+    <style type="text/css">
+        #loading {
+            position: fixed;
+            top: 0px;
+            right: 0px;
+            bottom: 0px;
+            filter: alpha(opacity=60);
+            background-color: #777;
+            z-index: 1002;
+            left: 0px;
+            display: none;
+            opacity: 0.5;
+            /*-moz-opacity: 0.5;*/
+            padding-top: 100px;
+            color: #000000
+        }
+    </style>
+    <link href="styles/taiji.css" rel="stylesheet" />
+    <link href="styles/fan.css" rel="stylesheet" />
+    <link href="styles/text-magic.css" rel="stylesheet" />
+
+    <script type="text/javascript">
+        // extract from fast-json-stable-stringify, thanks author
+        function fastJsonStableStringify(data, opts) {
+            if (!opts) opts = {};
+            if (typeof opts === 'function') opts = { cmp: opts };
+            var cycles = (typeof opts.cycles === 'boolean') ? opts.cycles : false;
+
+            var cmp = opts.cmp && (function (f) {
+                return function (node) {
+                    return function (a, b) {
+                        var aobj = { key: a, value: node[a] };
+                        var bobj = { key: b, value: node[b] };
+                        return f(aobj, bobj);
+                    };
+                };
+            })(opts.cmp);
+
+            var seen = [];
+            return (function stringify (node) {
+                if (node && node.toJSON && typeof node.toJSON === 'function') {
+                    node = node.toJSON();
+                }
+
+                if (node === undefined) return;
+                if (typeof node == 'number') return isFinite(node) ? '' + node : 'null';
+                if (typeof node !== 'object') return JSON.stringify(node);
+
+                var i, out;
+                if (Array.isArray(node)) {
+                    out = '[';
+                    for (i = 0; i < node.length; i++) {
+                        if (i) out += ',';
+                        out += stringify(node[i]) || 'null';
+                    }
+                    return out + ']';
+                }
+
+                if (node === null) return 'null';
+
+                if (seen.indexOf(node) !== -1) {
+                    if (cycles) return JSON.stringify('__cycle__');
+                    throw new TypeError('Converting circular structure to JSON');
+                }
+
+                var seenIndex = seen.push(node) - 1;
+                var keys = Object.keys(node).sort(cmp && cmp(node));
+                out = '';
+                for (i = 0; i < keys.length; i++) {
+                    var key = keys[i];
+                    var value = stringify(node[key]);
+
+                    if (!value) continue;
+                    if (out) out += ',';
+                    out += JSON.stringify(key) + ':' + value;
+                }
+                seen.splice(seenIndex, 1);
+                return '{' + out + '}';
+            })(data);
+        };
+
+        function setDemoJson(editor, url) {
+            $.get(url, function(text) {
+                    editor.setValue(text);
+                },"text");
+        }
+
+        function jsonStructureStringify(side, x, sorted) {
+            var o;
+            var jTokens = "";
+            try {
+                o = JSON.parse(x, function(k, v){
+                    jTokens += "\n(" + k + " : " + v + ")" ;
+                    return v;
+                });
+            }
+            catch (error) {
+                var e = "Caught " + error;
+                if (jTokens.length > 0) {
+                    e += "\n\nin json tokens:";
+                    e += "\n" + jTokens;
+                }
+                e += " in top " + side + " editor, and";
+                e += "\nThe SynatxError position can be navigated";
+                e += " by click at the red highlight spot";
+                e += "\nof code preview scroll bar in the top " + side + " editor.";
+                //alert(e);
+                return e;
+            }
+            if (sorted) {
+                o = JSON.parse(fastJsonStableStringify(o));
+            }
+            var j = JSON.stringify(o, function (k, v) {
+                    if (typeof v == 'string') {
+                        return '*****';
+                    } else if (typeof v == 'number') {
+                        return -1;
+                    } else if (typeof v == 'boolean') {
+                        return true;
+                    } else if (typeof v == 'undeclaredVariable') {
+                        return undefined;
+                    }
+                    return v;
+                },
+                4
+            );
+            return j;
+        }
+
+        $(document).keyup(function (e) {
+            if (e.key === "Escape") { // escape key maps to keycode `27`
+                $('#loading').hide();
+            }
+        });
+        
+        function swap() {
+            var s = topLeftEditor.getValue();
+            topLeftEditor.setValue(topRightEditor.getValue());
+            topRightEditor.setValue(s);
+            diffEditor.setModel({
+                original: monaco.editor.createModel("", 'json'),
+                modified: monaco.editor.createModel("", 'json')
+            });
+        }
+
+        function help() {
+            if (!driver.isActivated) {
+                event.stopPropagation();
+                driver.start();
+            }
+        }
+
+        function format() {
+            topLeftEditor.trigger("anyString", 'editor.action.formatDocument');
+            topRightEditor.trigger("anyString", 'editor.action.formatDocument');
+        }
+
+        function diff(diffViewType) {
+            //debugger;
+            $('#loading').fadeIn();
+            var jj = jsonStructureStringify(
+                        "Left",
+                        topLeftEditor.getValue(),
+                        vm.SelectedSortedStringify()
+                    );
+            var j1 = {
+                TextBody: jj
+            };
+            jj = jsonStructureStringify(
+                        "Right",
+                        topRightEditor.getValue(),
+                        vm.SelectedSortedStringify()
+                    );
+            var j2 = {
+                TextBody: jj
+            };
+            diffView(diffViewType,
+                j1, j2
+            );
+        }
+    </script>
+</head>
+<body>
+    <div id="loading" align="center">
+
+        <font size="10" color="red"><strong>Loading ...</strong></font>
+        <br>
+        <font size="10" color="red"><strong>press Esc for cancel waiting</strong></font>
+
+        <!--
+            <div class="fan-wrapper">
+                <div class="fan"></div>
+            </div>
+        -->
+        <div class="text-magic" data-word="Loading...">
+            <div class="white"></div>
+        </div>
+
+        <div class="box-taiji">
+        </div>
+    </div>
+        <div id="up1Div" align="center" width="100%">
+            <h4>
+                Json Structure Diff Assistant Tools Online
+                (powered by pure HTML/JavaScript/CSS i.e., monaco-editor/fast-json-stable-stringify/split.js/driver.js/knockoutjs/jquery/jquery-ui.)
+            </h4> 
+        </div>
+        <hr>
+        <div id="up2Div" align="left" width="100%">
+            <span id="helpSpan">
+                <button id="help"  accesskey="h" onclick="help();"><strong><u>H</u></strong>elp</button>
+            </span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span id="themesSpan" align="right" >
+                <strong><u>T</u></strong>heme:&nbsp;
+                <select accesskey="t" data-bind="options: availableThemes,
+                                                    optionsText: 'themeName',
+                                                    value: selectedTheme,
+                                                    updateValue: 'afterkeydown'
+                                                    ">
+                </select>
+            </span>                                
+        </div>
+        <hr>
+        <div id="up" class="split" style="border: 1px solid black">
+            <div id="left" class="split content split-horizontal" width="50%">
+
+            </div>
+            <div id="right" class="split content split-horizontal" width="50%">
+            </div>
+        </div>
+    
+    <div id="down" class="split content">
+        <div class="viewType">
+            <button id="format"  accesskey="f" onclick="format();">↑ <strong><u>F</u></strong>ormat ↑</button>
+            <button id="swap" accesskey="w" onclick="swap();">↑ S<strong><u>w</u></strong>ap ↑</button>
+            <hr>
+            <span id="checkboxSortedStringifySpan">
+                <input type="checkbox" id="checkboxSortedStringify" data-bind="checked:SelectedSortedStringify" />
+                <label id="checkboxSortedStringifyLabel" accesskey="k" for="checkboxSortedStringify">↓ Sorted by <strong><u>K</u></strong>ey stringify ↓</label>
+            </span>
+            <br />
+            <label id="diffViewTypeLabel">↓ Diff View Type: ↓</label>
+            <br />
+            <span id="diffViewType0Span">
+                <input type="radio" name="diffViewType" id="diffViewType0" onclick="diff(0);" value="0" data-bind="checked:SelectedDiffViewType" />
+                <label id="diffViewType0Label" accesskey="s" for="diffViewType0"><strong><u>S</u></strong>ide</label>
+            </span>
+            <span id="diffViewType1Span">
+                <input type="radio" name="diffViewType" id="diffViewType1" onclick="diff(1);" value="1" data-bind="checked:SelectedDiffViewType" />
+                <label id="diffViewType1Label" accesskey="i" for="diffViewType1">Inl<strong><u>i</u></strong>ne</label>
+            </span>
+        </div>
+        <div id="diffoutput">
+            <div id="container" style="width:100%;height:400px;border:1px solid grey"></div>
+        </div>
+    </div>
+    <script>
+        Split(['#up', '#down'], {
+            gutterSize: 10,
+            cursor: 'row-resize',
+            direction: 'vertical',
+            sizes: [20, 80]
+        });
+        Split(['#left', '#right'], {
+            sizes: [50, 50],
+            gutterSize: 10,
+            cursor: 'col-resize',
+        });
+        // driver should be after split
+        var driver = new Driver({
+            animate: true,  // Animate while changing highlighted element
+            opacity: 0.75   // Background opacity (0 means only popovers and without overlay)
+        });
+        driver.defineSteps([
+            {
+                element: '#helpSpan',
+                popover: {
+                    className: 'first-step-popover-class',
+                    title: 'Help ...',
+                    description: 'Click here or press key [Alt+h] for start introductions help',
+                    position: 'right'
+                }
+            },
+            {
+                element: '#themesSpan',
+                popover: {
+                    className: 'first-step-popover-class',
+                    title: 'Editor Themes ...',
+                    description: "Click here or press key [Alt+t] for editor's Theme selection" ,
+                    position: 'right'
+                }
+            },
+            {
+                element: '#left',
+                popover: {
+                    title: 'Compare ...',
+                    description: 'Copy & Paste Text in to here for compare',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '.gutter.gutter-horizontal',
+                popover: {
+                    title: 'Spliter horizontal ...',
+                    description: 'Mouse down and drag horizontally here for resize Left and Right region',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '#right',
+                popover: {
+                    title: 'Compare with ...',
+                    description: 'Copy & Paste Text in to here for compare with left',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '.gutter.gutter-vertical',
+                popover: {
+                    title: 'Spliter vertical ...',
+                    description: 'Mouse down and drag vertically here for resize Up and Down region',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '#format',
+                popover: {
+                    title: 'Format ...',
+                    description: 'Click here or press key [Alt+f] for Format Left and Right on above',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '#swap',
+                popover: {
+                    title: 'Swap ...',
+                    description: 'Click here or press key [Alt+w] for Swap Left and Right on above',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '#checkboxSortedStringifySpan',
+                popover: {
+                    title: 'Sorted key Stringify',
+                    description: 'Click here or press key [Alt+k] for switch mode of whether base on Sorted key Stringify comparison',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '#diffViewTypeLabel',
+                popover: {
+                    title: 'Diff View Type',
+                    description: 'Diff View Type selection',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '#diffViewType0Span',
+                popover: {
+                    title: 'Side',
+                    description: 'Click here or press key [Alt+s] for Side diff View type selection and view diff on below',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '#diffViewType1Span',
+                popover: {
+                    title: 'Inline',
+                    description: 'Click here or press key [Alt+i] for Inline diff View type selection and view diff on below',
+                    position: 'bottom-center'
+                }
+            },
+            {
+                element: '#diffoutput',
+                popover: {
+                    title: 'Diff View',
+                    description: 'Comparison Diff View',
+                    position: 'mid-center'
+                }
+            },
+        ]);
+        // Start the introduction
+        driver.start();
+        
+        require.config({ paths: { 
+            'vs': 'libs/monaco-editor/min/vs'
+        }});
+        var topLeftEditor;
+        require(['vs/editor/editor.main'], function () {
+            topLeftEditor = monaco.editor.create(document.getElementById('left'), {
+                value: [
+                        '{'                                                     ,
+                            '   "z": [{"a":1}],'                                ,
+                            '   "y": [{"a":{"a":true}}],'                       ,
+                            '   "a": "11111",'                                  ,
+                            '   "b": "222",'                                    ,
+                            '   "c": false, trigger json syntax error'          ,
+                            '   "d": [1,2,3,{"z":1,"a":"aaaaaa"}]'              ,
+                        '}'
+                ].join('\n')                                                    ,
+                language: 'json'                                                ,
+                automaticLayout: true                                           ,
+                foldingStrategy: 'indentation'                                  , // 代码可分小段折叠
+                overviewRulerBorder: false                                      , // 是否应围绕概览标尺绘制边框           
+                folding: true                                                   , // 是否启用代码折叠
+                scrollBeyondLastLine: false                                     , // 设置编辑器是否可以滚动到最后一行之后
+                renderLineHighlight: 'line'                                     , // 当前行突出显示方式  "all" | "line" | "none" | "gutter"
+                theme: "vs",
+            });
+            setDemoJson(topLeftEditor, "json1.json");
+        });
+
+        var topRightEditor;            
+        require(['vs/editor/editor.main'], function () {
+            topRightEditor = monaco.editor.create(document.getElementById('right'), {
+                value: [
+                        '{'                                                     ,
+                            '   "b": 1000 trigger json syntax error,'           ,
+                            '   "a":"222"'                                      ,
+                        '}'
+                ].join('\n')                                                    ,
+                language: 'json'                                                ,
+                automaticLayout: true                                           ,
+                foldingStrategy: 'indentation'                                  , // 代码可分小段折叠
+                overviewRulerBorder: true                                       , // 是否应围绕概览标尺绘制边框           
+                folding: true                                                   , // 是否启用代码折叠
+                scrollBeyondLastLine: false                                     , // 设置编辑器是否可以滚动到最后一行之后
+                renderLineHighlight: 'line'                                     , // 当前行突出显示方式  "all" | "line" | "none" | "gutter"
+                theme: "vs",
+            });
+            setDemoJson(topRightEditor, "json2.json");
+        });
+        var diffEditor;
+        require(['vs/editor/editor.main'], function() {
+            diffEditor = monaco.editor.createDiffEditor(document.getElementById('container'),{
+                    language: 'json',
+                    automaticLayout: true                                           ,
+                    foldingStrategy: 'indentation'                                  , // 代码可分小段折叠
+                    overviewRulerBorder: true                                       , // 是否应围绕概览标尺绘制边框           
+                    folding: true                                                   , // 是否启用代码折叠
+                    scrollBeyondLastLine: false                                     , // 设置编辑器是否可以滚动到最后一行之后
+                    renderLineHighlight: 'line'                                     , // 当前行突出显示方式  "all" | "line" | "none" | "gutter"
+                    theme: "vs",
+            });
+        });
+
+        function diffView(viewType, compareBaseObject, comparseWithObject) {
+            var originalTxt = compareBaseObject.TextBody;
+            var modifiedTxt = comparseWithObject.TextBody;
+            diffEditor.updateOptions({
+                renderSideBySide: !viewType,
+                readOnly: true
+            });
+            diffEditor.setModel({
+                original: monaco.editor.createModel(originalTxt, 'json'),
+                modified: monaco.editor.createModel(modifiedTxt, 'json')
+            });
+            $('#loading').fadeOut();
+        }
+        var editorTheme = function(themeName, themeId) {
+            this.themeName = themeName;
+            this.themeId = themeId;
+        };
+        var viewModel = function (data) {
+            var self = this;
+            self.SelectedDiffViewType = ko.observable("0");
+            self.SelectedSortedStringify = ko.observable("0");
+            self.availableThemes = ko.observableArray([
+                new editorTheme("Visual Studio"             , "vs"),
+                new editorTheme("Dark Vsiual Studio"        , "vs-dark"),
+                new editorTheme("High Contrast Black"       , "hc-black")
+            ]);
+            self.selectedTheme = ko.observable();
+        };
+
+        var vm = new viewModel([]);
+        ko.applyBindings(vm);
+
+        vm.selectedTheme.subscribe(function(newValue) {
+            monaco.editor.setTheme(newValue.themeId);
+        });
+    </script>
+</body>
+</html>
