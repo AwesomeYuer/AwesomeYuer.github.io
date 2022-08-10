@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="Generator" content="EditPlus®,Microshaoft">
     <meta name="Author" content="EditPlus®,Microshaoft">
-    <meta name="Keywords" content="EditPlus®,Microshaoft">
-    <meta name="Description" content="EditPlus®,Microshaoft">
+    <meta name="Keywords" content="json,Json Structures,diff,jsondiff,stringify,json-stable-stringify,fast-json-stable-stringify,monaco-editor,splitjs,split.js,driverjs,driver.js,EditPlus®,EditPlus,Microshaoft,AwesomeYuer,Awesome Yuer,Awesome-Yuer,于斯人也,于斯人野">
+    <meta name="Description" content="Json Structures Diff Assistant Tools Online (powered by pure HTML/JavaScript/CSS i.e., monaco-editor/fast-json-stable-stringify/split.js/driver.js/knockoutjs/jquery/jquery-ui.)">
     <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
-    <title>Json Structure Diff Assistant Tools Online</title>
+    <title>Json Structures Diff Assistant Tools Online</title>
 
     <script src="libs/fast-json-stable-stringify/fast-json-stable-stringify.js" type="text/javascript"></script>
     <script src="libs/knockout/knockout-3.5.1.debug.js" type="text/javascript"></script>
@@ -141,13 +141,115 @@
     <link href="styles/text-magic.css" rel="stylesheet" />
 
     <script type="text/javascript">
-        function setDemoJson(editor, url) {
+        (function($, h, c) {
+            var a = $([]),
+            e = $.resize = $.extend($.resize, {}),
+            i,
+            k = "setTimeout",
+            j = "resize",
+            d = j + "-special-event",
+            b = "delay",
+            f = "throttleWindow";
+            e[b] = 250;
+            e[f] = true;
+            $.event.special[j] = {
+                setup: function() {
+                    if (!e[f] && this[k]) {
+                        return false;
+                    }
+                    var l = $(this);
+                    a = a.add(l);
+                    $.data(this, d, {
+                        w: l.width(),
+                        h: l.height()
+                    });
+                    if (a.length === 1) {
+                        g();
+                    }
+                },
+                teardown: function() {
+                    if (!e[f] && this[k]) {
+                        return false;
+                    }
+                    var l = $(this);
+                    a = a.not(l);
+                    l.removeData(d);
+                    if (!a.length) {
+                        clearTimeout(i);
+                    }
+                },
+                add: function(l) {
+                    if (!e[f] && this[k]) {
+                        return false;
+                    }
+                    var n;
+                    function m(s, o, p) {
+                        var q = $(this),
+                        r = $.data(this, d);
+                        r.w = o !== c ? o: q.width();
+                        r.h = p !== c ? p: q.height();
+                        n.apply(this, arguments);
+                    }
+                    if ($.isFunction(l)) {
+                        n = l;
+                        return m;
+                    } else {
+                        n = l.handler;
+                        l.handler = m;
+                    }
+                }
+            };
+            function g() {
+                i = h[k](function() {
+                    a.each(function() {
+                        var n = $(this),
+                        m = n.width(),
+                        l = n.height(),
+                        o = $.data(this, d);
+                        if (m !== o.w || l !== o.h) {
+                            n.trigger(j, [o.w = m, o.h = l]);
+                        }
+                    });
+                    g();
+                },
+                e[b]);
+            }
+        })(jQuery, this);
+        function getStyle(element1, element2) {
+            return element1.currentStyle ? element1.currentStyle[element2] : getComputedStyle(element1)[element2];  //element1,要改变的元素代替名;element2,要改变的属性名
+        }
+
+        function setEditorJson(editor, url) {
             $.get(url, function(text) {
                     editor.setValue(text);
                 },"text");
         }
 
-        function jsonStructureStringify(side, x, sorted) {
+        function readFileToEditor(input, editor) {
+            var file = input.files[0]; 
+            var fileReader = new FileReader(); 
+            fileReader.readAsText(file); 
+            fileReader.onload = function() {
+                editor.setValue(fileReader.result);
+                clearDiffEditor();
+            }; 
+            fileReader.onerror = function() {
+                editor.setValue(fileReader.error);
+            }; 
+        }
+
+        function clearEditor(editor) {
+            editor.setValue("");
+        }
+
+        function clearDiffEditor() {
+            diffEditor.setModel({
+                original: monaco.editor.createModel(null, 'json'),
+                modified: monaco.editor.createModel(null, 'json')
+            });
+        }
+
+        function jsonStructuresStringify(side, x, sorted) {
             var o;
             var jTokens = "";
             try {
@@ -189,20 +291,28 @@
             return j;
         }
 
-        $(document).keyup(function (e) {
-            if (e.key === "Escape") { // escape key maps to keycode `27`
-                $('#loading').hide();
-            }
-        });
-        
+        function resizeEditors() {
+            var div1 = document.getElementById("left");
+            var div2 = document.getElementById("topLeftEditorDiv");
+            var height = parseInt(getStyle(div1,"height"));
+            div2.style.height = height - 28 + "px";
+
+            div1 = document.getElementById("right");
+            div2 = document.getElementById("topRightEditorDiv");
+            height = parseInt(getStyle(div1,"height"));
+            div2.style.height = height - 28 + "px";
+
+            div1 = document.getElementById("down");
+            div2 = document.getElementById("container");
+            height = parseInt(getStyle(div1,"height"));
+            div2.style.height = height - 160 + "px";
+        }
+       
         function swap() {
             var s = topLeftEditor.getValue();
             topLeftEditor.setValue(topRightEditor.getValue());
             topRightEditor.setValue(s);
-            diffEditor.setModel({
-                original: monaco.editor.createModel("", 'json'),
-                modified: monaco.editor.createModel("", 'json')
-            });
+            clearDiffEditor();
         }
 
         function help() {
@@ -220,7 +330,7 @@
         function diff(diffViewType) {
             //debugger;
             $('#loading').fadeIn();
-            var jj = jsonStructureStringify(
+            var jj = jsonStructuresStringify(
                         "Left",
                         topLeftEditor.getValue(),
                         vm.SelectedSortedStringify()
@@ -228,7 +338,7 @@
             var j1 = {
                 TextBody: jj
             };
-            jj = jsonStructureStringify(
+            jj = jsonStructuresStringify(
                         "Right",
                         topRightEditor.getValue(),
                         vm.SelectedSortedStringify()
@@ -263,7 +373,7 @@
     </div>
         <div id="up1Div" align="center" width="100%">
             <h4>
-                Json Structure Diff Assistant Tools Online
+                Json Structures Diff Assistant Tools Online
                 (powered by pure HTML/JavaScript/CSS i.e., monaco-editor/fast-json-stable-stringify/split.js/driver.js/knockoutjs/jquery/jquery-ui.)
             </h4> 
         </div>
@@ -272,7 +382,7 @@
             <span id="helpSpan">
                 <button id="help"  accesskey="h" onclick="help();"><strong><u>H</u></strong>elp</button>
             </span>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;
             <span id="themesSpan" align="right" >
                 <strong><u>T</u></strong>heme:&nbsp;
                 <select accesskey="t" data-bind="options: availableThemes,
@@ -281,53 +391,121 @@
                                                     updateValue: 'afterkeydown'
                                                     ">
                 </select>
-            </span>                                
+            </span>             
         </div>
-        <hr>
+        <br>
         <div id="up" class="split" style="border: 1px solid black">
             <div id="left" class="split content split-horizontal" width="50%">
+                <div style="height: 25px;background-color: lightgray;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left">
+                                <span id="chooseFileLeftSpan">
+                                    &nbsp;(<strong><u>L</u></strong>)&nbsp;<input id="chooseFileLeft" accesskey="l" type="file" onchange="readFileToEditor(this, topLeftEditor);">
+                                </span>                            </td>
+                            <td align="right">
+                                <span id="clearLeftSpan" >
+                                    <button accesskey="1" onclick="clearEditor(topLeftEditor);">Clear (<strong><u>1</u></strong>)</button>
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>                
+                
+                <div id="topLeftEditorDiv" style="height: 100%;">
 
+                </div>
             </div>
+            
             <div id="right" class="split content split-horizontal" width="50%">
+                <div style="height: 25px; background-color: lightgray;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left">
+                                <span id="chooseFileRightSpan">
+                                    &nbsp;(<strong><u>R</u></strong>)&nbsp;<input id="chooseFileRight" accesskey="r" type="file" onchange="readFileToEditor(this, topRightEditor);">
+                                </span>
+                            </td>
+                            <td align="right">
+                                <span id="clearRightSpan">
+                                    <button accesskey="2" onclick="clearEditor(topRightEditor);">Clear (<strong><u>2</u></strong>)</button>
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div id="topRightEditorDiv" style="height: 100%;">
+                    
+                </div>
             </div>
         </div>
     
     <div id="down" class="split content">
-        <div class="viewType">
+        <br>
+        <div align="center">
             <button id="format"  accesskey="m" onclick="format();">↑ For<strong><u>m</u></strong>at ↑</button>
             <button id="swap" accesskey="w" onclick="swap();">↑ S<strong><u>w</u></strong>ap ↑</button>
-            <hr>
+        </div>
+        <hr>
+        <div class="viewType">
+
             <span id="checkboxSortedStringifySpan">
                 <input type="checkbox" id="checkboxSortedStringify" data-bind="checked:SelectedSortedStringify" />
                 <label id="checkboxSortedStringifyLabel" accesskey="k" for="checkboxSortedStringify">↓ Sorted by <strong><u>K</u></strong>ey stringify ↓</label>
             </span>
-            <br />
+            <br>
             <label id="diffViewTypeLabel">↓ Diff View Type: ↓</label>
-            <br />
-            <span id="diffViewType0Span">
-                <input type="radio" name="diffViewType" id="diffViewType0" onclick="diff(0);" value="0" data-bind="checked:SelectedDiffViewType" />
-                <label id="diffViewType0Label" accesskey="s" for="diffViewType0"><strong><u>S</u></strong>ide</label>
-            </span>
-            <span id="diffViewType1Span">
-                <input type="radio" name="diffViewType" id="diffViewType1" onclick="diff(1);" value="1" data-bind="checked:SelectedDiffViewType" />
-                <label id="diffViewType1Label" accesskey="i" for="diffViewType1">Inl<strong><u>i</u></strong>ne</label>
-            </span>
+            <br>
+            <table width="100%">
+                <tr>
+                    <td width="20%">
+                    </td>
+                    <td>
+                        <span id="diffViewType0Span">
+                            <input type="radio" name="diffViewType" id="diffViewType0" onclick="diff(0);" value="0" data-bind="checked:SelectedDiffViewType" />
+                            <label id="diffViewType0Label" accesskey="s" for="diffViewType0"><strong><u>S</u></strong>ide</label>
+                        </span>
+                        <span id="diffViewType1Span">
+                            <input type="radio" name="diffViewType" id="diffViewType1" onclick="diff(1);" value="1" data-bind="checked:SelectedDiffViewType" />
+                            <label id="diffViewType1Label" accesskey="i" for="diffViewType1">Inl<strong><u>i</u></strong>ne</label>
+                        </span>
+                    </td>
+                    <td width="20%" align="right">
+                        <span id="clearDiffSpan">
+                            <button accesskey="c" onclick="clearDiffEditor();">↓ <strong><u>C</u></strong>lear ↓</button>
+                        </span>
+                    </td>
+                </tr>
+            </table>
         </div>
-        <div id="diffoutput">
+        <div id="diffOutput">
             <div id="container" style="width:100%;height:400px;border:1px solid grey"></div>
         </div>
     </div>
     <script>
+        $(document).keyup(function (e) {
+            if (e.key === "Escape") { // escape key maps to keycode `27`
+                $('#loading').hide();
+            }
+        });
+
+        $("#left").resize(function() {
+            resizeEditors();
+        });
+
         Split(['#up', '#down'], {
-            gutterSize: 10,
+            gutterSize: 5,
             cursor: 'row-resize',
             direction: 'vertical',
-            sizes: [20, 80]
+            sizes: [20, 70],
+            minSize: 100
         });
         Split(['#left', '#right'], {
             sizes: [50, 50],
-            gutterSize: 10,
+            gutterSize: 5,
             cursor: 'col-resize',
+            minSize: 400
         });
         // driver should be after split
         var driver = new Driver({
@@ -340,21 +518,36 @@
                 popover: {
                     className: 'first-step-popover-class',
                     title: 'Help ...',
-                    description: 'Click here or press key [Alt+h] for start introductions help, and press key [→] or [←] for go forward or backward help introduction',
+                    description: 'Click here or press key [Alt+h] for start introductions help, and press key [→] or [←] for go forward or backward introduction help, and Click anywhere in shaded area or press key [Esc] for exit introduction help',
                     position: 'right'
                 }
             },
             {
                 element: '#themesSpan',
                 popover: {
-                    className: 'first-step-popover-class',
                     title: 'Editor Themes ...',
                     description: "Click here or press key [Alt+t] for editor's Theme selection" ,
                     position: 'right'
                 }
             },
             {
-                element: '#left',
+                element: '#chooseFileLeftSpan',
+                popover: {
+                    title: 'Choose File ...',
+                    description: "Click here or press key [Alt+l] for choose file content into Left" ,
+                    position: 'right'
+                }
+            },
+            {
+                element: '#clearLeftSpan',
+                popover: {
+                    title: 'Choose File ...',
+                    description: "Click here or press key [Alt+1] for clear content in Left editor" ,
+                    position: 'right'
+                }
+            },
+            {
+                element: '#topLeftEditorDiv',
                 popover: {
                     title: 'Compare ...',
                     description: 'Copy & Paste Text in to here for compare',
@@ -370,7 +563,23 @@
                 }
             },
             {
-                element: '#right',
+                element: '#chooseFileRightSpan',
+                popover: {
+                    title: 'Choose File ...',
+                    description: "Click here or press key [Alt+r] for choose file content into Right editor" ,
+                    position: 'right'
+                }
+            },
+            {
+                element: '#clearRightSpan',
+                popover: {
+                    title: 'Choose File ...',
+                    description: "Click here or press key [Alt+2] for clear content in Right" ,
+                    position: 'left'
+                }
+            },
+            {
+                element: '#topRightEditorDiv',
                 popover: {
                     title: 'Compare with ...',
                     description: 'Copy & Paste Text in to here for compare with left',
@@ -434,7 +643,15 @@
                 }
             },
             {
-                element: '#diffoutput',
+                element: '#clearDiffSpan',
+                popover: {
+                    title: 'Choose File ...',
+                    description: "Click here or press key [Alt+c] for clear content in Diff editor" ,
+                    position: 'left'
+                }
+            },
+            {
+                element: '#diffOutput',
                 popover: {
                     title: 'Diff View',
                     description: 'Comparison Diff View',
@@ -450,7 +667,7 @@
         }});
         var topLeftEditor;
         require(['vs/editor/editor.main'], function () {
-            topLeftEditor = monaco.editor.create(document.getElementById('left'), {
+            topLeftEditor = monaco.editor.create(document.getElementById('topLeftEditorDiv'), {
                 value: [
                         '{'                                                     ,
                             '   "z": [{"a":1}],'                                ,
@@ -464,18 +681,18 @@
                 language: 'json'                                                ,
                 automaticLayout: true                                           ,
                 foldingStrategy: 'indentation'                                  , // 代码可分小段折叠
-                overviewRulerBorder: false                                      , // 是否应围绕概览标尺绘制边框           
+                overviewRulerBorder: false                                      , // 是否应围绕概览标尺绘制边框
                 folding: true                                                   , // 是否启用代码折叠
                 scrollBeyondLastLine: false                                     , // 设置编辑器是否可以滚动到最后一行之后
                 renderLineHighlight: 'line'                                     , // 当前行突出显示方式  "all" | "line" | "none" | "gutter"
                 theme: "vs",
             });
-            setDemoJson(topLeftEditor, "json1.json");
+            setEditorJson(topLeftEditor, "json1.json");
         });
 
         var topRightEditor;            
         require(['vs/editor/editor.main'], function () {
-            topRightEditor = monaco.editor.create(document.getElementById('right'), {
+            topRightEditor = monaco.editor.create(document.getElementById('topRightEditorDiv'), {
                 value: [
                         '{'                                                     ,
                             '   "b": 1000 trigger json syntax error,'           ,
@@ -484,25 +701,25 @@
                 ].join('\n')                                                    ,
                 language: 'json'                                                ,
                 automaticLayout: true                                           ,
-                foldingStrategy: 'indentation'                                  , // 代码可分小段折叠
-                overviewRulerBorder: true                                       , // 是否应围绕概览标尺绘制边框           
-                folding: true                                                   , // 是否启用代码折叠
-                scrollBeyondLastLine: false                                     , // 设置编辑器是否可以滚动到最后一行之后
-                renderLineHighlight: 'line'                                     , // 当前行突出显示方式  "all" | "line" | "none" | "gutter"
+                foldingStrategy: 'indentation'                                  ,
+                overviewRulerBorder: true                                       ,
+                folding: true                                                   ,
+                scrollBeyondLastLine: false                                     ,
+                renderLineHighlight: 'line'                                     ,
                 theme: "vs",
             });
-            setDemoJson(topRightEditor, "json2.json");
+            setEditorJson(topRightEditor, "json2.json");
         });
         var diffEditor;
         require(['vs/editor/editor.main'], function() {
-            diffEditor = monaco.editor.createDiffEditor(document.getElementById('container'),{
+            diffEditor = monaco.editor.createDiffEditor(document.getElementById('container'), {
                     language: 'json',
-                    automaticLayout: true                                           ,
-                    foldingStrategy: 'indentation'                                  , // 代码可分小段折叠
-                    overviewRulerBorder: true                                       , // 是否应围绕概览标尺绘制边框           
-                    folding: true                                                   , // 是否启用代码折叠
-                    scrollBeyondLastLine: false                                     , // 设置编辑器是否可以滚动到最后一行之后
-                    renderLineHighlight: 'line'                                     , // 当前行突出显示方式  "all" | "line" | "none" | "gutter"
+                    automaticLayout: true                                       ,
+                    foldingStrategy: 'indentation'                              ,
+                    overviewRulerBorder: true                                   ,
+                    folding: true                                               ,
+                    scrollBeyondLastLine: false                                 ,
+                    renderLineHighlight: 'line'                                 ,
                     theme: "vs",
             });
         });
@@ -529,9 +746,9 @@
             self.SelectedDiffViewType = ko.observable("0");
             self.SelectedSortedStringify = ko.observable("0");
             self.availableThemes = ko.observableArray([
-                new editorTheme("Visual Studio"             , "vs"),
-                new editorTheme("Dark Vsiual Studio"        , "vs-dark"),
-                new editorTheme("High Contrast Black"       , "hc-black")
+                new editorTheme("Visual Studio",        "vs"),
+                new editorTheme("Dark Vsiual Studio",   "vs-dark"),
+                new editorTheme("High Contrast Black",  "hc-black")
             ]);
             self.selectedTheme = ko.observable();
         };
@@ -542,6 +759,7 @@
         vm.selectedTheme.subscribe(function(newValue) {
             monaco.editor.setTheme(newValue.themeId);
         });
+        resizeEditors();
     </script>
 </body>
 </html>
