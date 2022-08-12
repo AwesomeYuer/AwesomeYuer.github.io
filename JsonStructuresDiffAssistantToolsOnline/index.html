@@ -275,13 +275,13 @@
                 o = JSON.parse(fastJsonStableStringify(o));
             }
             var j = JSON.stringify(o, function (k, v) {
-                    if (typeof v == 'string') {
-                        return '*****';
-                    } else if (typeof v == 'number') {
+                    if (typeof v == "string") {
+                        return "*****";
+                    } else if (typeof v == "number") {
                         return -1;
-                    } else if (typeof v == 'boolean') {
+                    } else if (typeof v == "boolean") {
                         return true;
-                    } else if (typeof v == 'undeclaredVariable') {
+                    } else if (typeof v == "undeclaredVariable") {
                         return undefined;
                     }
                     return v;
@@ -323,8 +323,8 @@
         }
 
         function format() {
-            topLeftEditor.trigger("anyString", 'editor.action.formatDocument');
-            topRightEditor.trigger("anyString", 'editor.action.formatDocument');
+            topLeftEditor.trigger("anyString", "editor.action.formatDocument");
+            topRightEditor.trigger("anyString", "editor.action.formatDocument");
         }
 
         function diff(diffViewType) {
@@ -404,7 +404,8 @@
                             <td align="left">
                                 <span id="chooseFileLeftSpan">
                                     &nbsp;(<strong><u>L</u></strong>)&nbsp;<input id="chooseFileLeft" accesskey="l" type="file" onchange="readFileToEditor(this, topLeftEditor);">
-                                </span>                            </td>
+                                </span>                            
+                            </td>
                             <td align="right">
                                 <span id="clearLeftSpan" >
                                     <button accesskey="1" onclick="clearEditor(topLeftEditor);">
@@ -514,17 +515,17 @@
             resizeEditors();
         });
 
-        Split(['#up', '#down'], {
+        Split(["#up", "#down"], {
             gutterSize: 5,
-            cursor: 'row-resize',
-            direction: 'vertical',
+            cursor: "row-resize",
+            direction: "vertical",
             sizes: [20, 70],
             minSize: 100
         });
-        Split(['#left', '#right'], {
+        Split(["#left", "#right"], {
             sizes: [50, 50],
             gutterSize: 5,
-            cursor: 'col-resize',
+            cursor: "col-resize",
             minSize: 400
         });
         // driver should be after split
