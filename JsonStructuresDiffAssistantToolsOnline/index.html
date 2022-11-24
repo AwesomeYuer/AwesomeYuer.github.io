@@ -5,7 +5,7 @@
     <meta name="Generator" content="EditPlus®,Microshaoft">
     <meta name="Author" content="EditPlus®,Microshaoft">
     <meta name="Keywords" content="json,Json Structures,diff,jsondiff,stringify,json-stable-stringify,fast-json-stable-stringify,monaco-editor,splitjs,split.js,driverjs,driver.js,EditPlus®,EditPlus,Microshaoft,AwesomeYuer,Awesome Yuer,Awesome-Yuer,于斯人也,于斯人野">
-    <meta name="Description" content="Json Structures Diff Assistant Tools Online (powered by pure HTML/JavaScript/CSS i.e., monaco-editor/fast-json-stable-stringify/split.js/driver.js/knockoutjs/jquery/jquery-ui.)">
+    <meta name="Description" content="Json Structures Diff Assistant Tools Online (powered by pure HTML/JavaScript/CSS i.e. monaco-editor/fast-json-stable-stringify/split.js/driver.js/knockoutjs/jquery/jquery-ui.)">
     <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
     <title>Json Structures Diff Assistant Tools Online</title>
 
@@ -275,14 +275,16 @@
                 o = JSON.parse(fastJsonStableStringify(o));
             }
             var j = JSON.stringify(o, function (k, v) {
-                    if (typeof v == 'string') {
-                        return '*****';
-                    } else if (typeof v == 'number') {
-                        return -1;
-                    } else if (typeof v == 'boolean') {
-                        return true;
-                    } else if (typeof v == 'undeclaredVariable') {
-                        return undefined;
+                    if (!vm.SelectedKeepKeyWithValueStringify()) {
+                        if (typeof v == 'string') {
+                            return '*****';
+                        } else if (typeof v == 'number') {
+                            return -1;
+                        } else if (typeof v == 'boolean') {
+                            return true;
+                        } else if (typeof v == 'undeclaredVariable') {
+                            return undefined;
+                        }
                     }
                     return v;
                 },
@@ -374,13 +376,15 @@
         <div id="up1Div" align="center" width="100%">
             <h4>
                 Json Structures Diff Assistant Tools Online
-                (powered by pure HTML/JavaScript/CSS i.e., monaco-editor/fast-json-stable-stringify/split.js/driver.js/knockoutjs/jquery/jquery-ui.)
+                (powered by pure HTML/JavaScript/CSS i.e. monaco-editor/fast-json-stable-stringify/split.js/driver.js/knockoutjs/jquery/jquery-ui.)
             </h4> 
         </div>
         <hr>
         <div id="up2Div" align="left" width="100%">
             <span id="helpSpan">
-                <button id="help"  accesskey="h" onclick="help();"><strong><u>H</u></strong>elp</button>
+                <button id="help"  accesskey="h" onclick="help();">
+                    <strong><u>H</u></strong>elp
+                </button>
             </span>
             &nbsp;&nbsp;&nbsp;&nbsp;
             <span id="themesSpan" align="right" >
@@ -389,7 +393,7 @@
                                                     optionsText: 'themeName',
                                                     value: selectedTheme,
                                                     updateValue: 'afterkeydown'
-                                                    ">
+                                                ">
                 </select>
             </span>             
         </div>
@@ -401,11 +405,15 @@
                         <tr>
                             <td align="left">
                                 <span id="chooseFileLeftSpan">
-                                    &nbsp;(<strong><u>L</u></strong>)&nbsp;<input id="chooseFileLeft" accesskey="l" type="file" onchange="readFileToEditor(this, topLeftEditor);">
-                                </span>                            </td>
+                                    &nbsp;(<strong><u>L</u></strong>)&nbsp;
+                                    <input id="chooseFileLeft" accesskey="l" type="file" onchange="readFileToEditor(this, topLeftEditor);">
+                                </span>
+                            </td>
                             <td align="right">
                                 <span id="clearLeftSpan" >
-                                    <button accesskey="1" onclick="clearEditor(topLeftEditor);">Clear (<strong><u>1</u></strong>)</button>
+                                    <button accesskey="1" onclick="clearEditor(topLeftEditor);">
+                                        Clear (<strong><u>1</u></strong>)
+                                    </button>
                                 </span>
                             </td>
                         </tr>
@@ -423,12 +431,15 @@
                         <tr>
                             <td align="left">
                                 <span id="chooseFileRightSpan">
-                                    &nbsp;(<strong><u>R</u></strong>)&nbsp;<input id="chooseFileRight" accesskey="r" type="file" onchange="readFileToEditor(this, topRightEditor);">
+                                    &nbsp;(<strong><u>R</u></strong>)&nbsp;
+                                    <input id="chooseFileRight" accesskey="r" type="file" onchange="readFileToEditor(this, topRightEditor);">
                                 </span>
                             </td>
                             <td align="right">
                                 <span id="clearRightSpan">
-                                    <button accesskey="2" onclick="clearEditor(topRightEditor);">Clear (<strong><u>2</u></strong>)</button>
+                                    <button accesskey="2" onclick="clearEditor(topRightEditor);">
+                                        Clear (<strong><u>2</u></strong>)
+                                    </button>
                                 </span>
                             </td>
                         </tr>
@@ -440,22 +451,44 @@
                 </div>
             </div>
         </div>
-    
+
     <div id="down" class="split content">
         <br>
         <div align="center">
-            <button id="format"  accesskey="m" onclick="format();">↑ For<strong><u>m</u></strong>at ↑</button>
-            <button id="swap" accesskey="w" onclick="swap();">↑ S<strong><u>w</u></strong>ap ↑</button>
+            <button id="format"  accesskey="m" onclick="format();">
+                ↑ For<strong><u>m</u></strong>at ↑
+            </button>
+            <button id="swap" accesskey="w" onclick="swap();">
+                ↑ S<strong><u>w</u></strong>ap ↑
+            </button>
         </div>
         <hr>
         <div class="viewType">
-
-            <span id="checkboxSortedStringifySpan">
-                <input type="checkbox" id="checkboxSortedStringify" data-bind="checked:SelectedSortedStringify" />
-                <label id="checkboxSortedStringifyLabel" accesskey="k" for="checkboxSortedStringify">↓ Sorted by <strong><u>K</u></strong>ey stringify ↓</label>
-            </span>
+            <table width="100%">
+                <tr>
+                    <td align="right" width="50%">
+                        <span id="checkboxSortedStringifySpan">
+                            <input type="checkbox" id="checkboxSortedStringify" data-bind="checked:SelectedSortedStringify" />
+                            <label id="checkboxSortedStringifyLabel" accesskey="k" for="checkboxSortedStringify">
+                                ↓ Sorted by <strong><u>K</u></strong>ey stringify ↓
+                            </label>
+                        </span>
+                    </td>
+                    <td align="left">
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <span id="checkboxKeepKeyWithValueStringifySpan">
+                            <input type="checkbox" id="checkboxKeepKeyWithValueStringify" data-bind="checked:SelectedKeepKeyWithValueStringify" />
+                            <label id="checkboxKeepKeyWithValueStringifyLabel" accesskey="v" for="checkboxKeepKeyWithValueStringify">
+                                ↓ Keep Key With <strong><u>V</u></strong>alue Stringify ↓
+                            </label>
+                        </span>
+                    </td>
+                </tr>
+            </table>
             <br>
-            <label id="diffViewTypeLabel">↓ Diff View Type: ↓</label>
+            <label id="diffViewTypeLabel">
+                ↓ Diff View Type: ↓
+            </label>
             <br>
             <table width="100%">
                 <tr>
@@ -464,16 +497,22 @@
                     <td>
                         <span id="diffViewType0Span">
                             <input type="radio" name="diffViewType" id="diffViewType0" onclick="diff(0);" value="0" data-bind="checked:SelectedDiffViewType" />
-                            <label id="diffViewType0Label" accesskey="s" for="diffViewType0"><strong><u>S</u></strong>ide</label>
+                            <label id="diffViewType0Label" accesskey="s" for="diffViewType0">
+                                <strong><u>S</u></strong>ide
+                            </label>
                         </span>
                         <span id="diffViewType1Span">
                             <input type="radio" name="diffViewType" id="diffViewType1" onclick="diff(1);" value="1" data-bind="checked:SelectedDiffViewType" />
-                            <label id="diffViewType1Label" accesskey="i" for="diffViewType1">Inl<strong><u>i</u></strong>ne</label>
+                            <label id="diffViewType1Label" accesskey="i" for="diffViewType1">
+                                Inl<strong><u>i</u></strong>ne
+                            </label>
                         </span>
                     </td>
                     <td width="20%" align="right">
                         <span id="clearDiffSpan">
-                            <button accesskey="c" onclick="clearDiffEditor();">↓ <strong><u>C</u></strong>lear ↓</button>
+                            <button accesskey="c" onclick="clearDiffEditor();">
+                                ↓ <strong><u>C</u></strong>lear ↓
+                            </button>
                         </span>
                     </td>
                 </tr>
@@ -619,6 +658,14 @@
                 }
             },
             {
+                element: '#checkboxKeepKeyWithValueStringifySpan',
+                popover: {
+                    title: 'Keep Key With Value Stringify',
+                    description: 'Click here or press key [Alt+v] for switch mode of whether base on Keep Key With Value Stringify comparison',
+                    position: 'bottom-center'
+                }
+            },
+            {
                 element: '#diffViewTypeLabel',
                 popover: {
                     title: 'Diff View Type',
@@ -661,7 +708,7 @@
         ]);
         // Start the introduction
         driver.start();
-        
+    
         require.config({ paths: { 
             'vs': 'libs/monaco-editor/min/vs'
         }});
@@ -745,12 +792,14 @@
             var self = this;
             self.SelectedDiffViewType = ko.observable("0");
             self.SelectedSortedStringify = ko.observable("0");
+            self.SelectedKeepKeyWithValueStringify = ko.observable("0");
             self.availableThemes = ko.observableArray([
                 new editorTheme("Visual Studio",        "vs"),
                 new editorTheme("Dark Vsiual Studio",   "vs-dark"),
                 new editorTheme("High Contrast Black",  "hc-black")
             ]);
             self.selectedTheme = ko.observable();
+            self.SelectedKeepKeyWithValueStringify(0);
         };
 
         var vm = new viewModel([]);
